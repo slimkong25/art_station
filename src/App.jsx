@@ -1,4 +1,8 @@
-import { useEffect, useState } from "react";
+import {
+  useState,
+  useEffect,
+  useRef,
+} from "react";
 import {
   Routes,
   Route,
@@ -6,6 +10,25 @@ import {
   useNavigate,
   useParams,
 } from "react-router";
+
+import {
+  DndContext,
+  DragOverlay,
+  PointerSensor,
+  TouchSensor,
+  useSensor,
+  useSensors,
+  closestCenter,
+} from "@dnd-kit/core";
+
+import {
+  arrayMove,
+  SortableContext,
+  verticalListSortingStrategy,
+  useSortable,
+} from "@dnd-kit/sortable";
+
+import { CSS } from "@dnd-kit/utilities";
 
 import { supabase } from "./lib/supabaseClient";
 import "./App.css";
@@ -1031,6 +1054,808 @@ async function prepareImageForUpload(file) {
   }
 }
 
+function AdminLayout({
+  artworks,
+  fetchArtworks,
+  setError,
+  setSuccess,
+}) {
+  const [activeLayout, setActiveLayout] =
+    useState("home");
+
+  const [homeColumns, setHomeColumns] =
+    useState([[], [], []]);
+
+  const [shopItems, setShopItems] =
+    useState([]);
+
+  const [activeId, setActiveId] =
+    useState(null);
+
+  const [saving, setSaving] =
+    useState(false);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: {
+        delay: 150,
+        tolerance: 8,
+      },
+    })
+  );
+
+
+  /* =========================
+     BUILD LAYOUT
+  ========================= */
+
+  useEffect(() => {
+    const columns = [[], [], []];
+
+    const homeArtworks = artworks
+      .filter(
+        (artwork) =>
+          artwork.show_on_home
+      )
+      .sort((a, b) => {
+        const columnA =
+          Number(a.column_position) || 1;
+
+        const columnB =
+          Number(b.column_position) || 1;
+
+        if (columnA !== columnB) {
+          return columnA - columnB;
+        }
+
+        return (
+          (Number(a.sort_order) || 0) -
+          (Number(b.sort_order) || 0)
+        );
+      });
+
+    homeArtworks.forEach((artwork) => {
+      const column =
+        Math.min(
+          3,
+          Math.max(
+            1,
+            Number(
+              artwork.column_position
+            ) || 1
+          )
+        ) - 1;
+
+      columns[column].push(artwork);
+    });
+
+    setHomeColumns(columns);
+
+
+    const shop = artworks
+      .filter(
+        (artwork) =>
+          artwork.show_in_shop
+      )
+      .sort((a, b) => {
+        const orderA =
+          Number(a.shop_order) || 999999;
+
+        const orderB =
+          Number(b.shop_order) || 999999;
+
+        return orderA - orderB;
+      });
+
+    setShopItems(shop);
+  }, [artworks]);
+
+
+  /* =========================
+     FIND ARTWORK
+  ========================= */
+
+  function findArtwork(id) {
+    for (
+      let columnIndex = 0;
+      columnIndex < homeColumns.length;
+      columnIndex++
+    ) {
+      const artwork =
+        homeColumns[columnIndex].find(
+          (item) => item.id === id
+        );
+
+      if (artwork) {
+        return artwork;
+      }
+    }
+
+    return shopItems.find(
+      (item) => item.id === id
+    );
+  }
+
+
+  /* =========================
+     DRAG START
+  ========================= */
+
+  function handleDragStart(event) {
+    setActiveId(event.active.id);
+  }
+
+
+  /* =========================
+     DRAG CANCEL
+  ========================= */
+
+  function handleDragCancel() {
+    setActiveId(null);
+  }
+
+
+  /* =========================
+     HOME DRAG END
+  ========================= */
+
+  function handleHomeDragEnd(event) {
+    const {
+      active,
+      over,
+    } = event;
+
+    setActiveId(null);
+
+    if (!over) {
+      return;
+    }
+
+    if (active.id === over.id) {
+      return;
+    }
+
+    setHomeColumns((current) => {
+      const next = current.map(
+        (column) => [...column]
+      );
+
+      let sourceColumn = -1;
+      let sourceIndex = -1;
+
+      let targetColumn = -1;
+      let targetIndex = -1;
+
+      next.forEach(
+        (column, columnIndex) => {
+          const source =
+            column.findIndex(
+              (item) =>
+                item.id === active.id
+            );
+
+          if (source !== -1) {
+            sourceColumn =
+              columnIndex;
+
+            sourceIndex = source;
+          }
+
+          const target =
+            column.findIndex(
+              (item) =>
+                item.id === over.id
+            );
+
+          if (target !== -1) {
+            targetColumn =
+              columnIndex;
+
+            targetIndex = target;
+          }
+        }
+      );
+
+      if (
+        sourceColumn === -1 ||
+        targetColumn === -1
+      ) {
+        return current;
+      }
+
+      const [moved] =
+        next[sourceColumn].splice(
+          sourceIndex,
+          1
+        );
+
+      if (
+        sourceColumn === targetColumn
+      ) {
+        next[targetColumn] =
+          arrayMove(
+            [
+              ...next[targetColumn],
+              moved,
+            ],
+            next[targetColumn].length,
+            targetIndex
+          );
+      } else {
+        next[targetColumn].splice(
+          targetIndex,
+          0,
+          moved
+        );
+      }
+
+      return next;
+    });
+  }
+
+
+  /* =========================
+     SHOP DRAG END
+  ========================= */
+
+  function handleShopDragEnd(event) {
+    const {
+      active,
+      over,
+    } = event;
+
+    setActiveId(null);
+
+    if (!over) {
+      return;
+    }
+
+    if (active.id === over.id) {
+      return;
+    }
+
+    setShopItems((current) => {
+      const oldIndex =
+        current.findIndex(
+          (item) =>
+            item.id === active.id
+        );
+
+      const newIndex =
+        current.findIndex(
+          (item) =>
+            item.id === over.id
+        );
+
+      if (
+        oldIndex === -1 ||
+        newIndex === -1
+      ) {
+        return current;
+      }
+
+      return arrayMove(
+        current,
+        oldIndex,
+        newIndex
+      );
+    });
+  }
+
+
+  /* =========================
+     SAVE HOME
+  ========================= */
+
+  async function saveHomeLayout() {
+    setSaving(true);
+    setError("");
+    setSuccess("");
+
+    try {
+      for (
+        let columnIndex = 0;
+        columnIndex < 3;
+        columnIndex++
+      ) {
+        const column =
+          homeColumns[columnIndex];
+
+        for (
+          let index = 0;
+          index < column.length;
+          index++
+        ) {
+          const artwork =
+            column[index];
+
+          const {
+            error,
+          } = await supabase
+            .from("artworks")
+            .update({
+              column_position:
+                columnIndex + 1,
+
+              sort_order:
+                index + 1,
+            })
+            .eq(
+              "id",
+              artwork.id
+            );
+
+          if (error) {
+            throw error;
+          }
+        }
+      }
+
+      await fetchArtworks();
+
+      setSuccess(
+        "Home layout saved."
+      );
+    } catch (error) {
+      console.error(
+        "HOME LAYOUT ERROR:",
+        error
+      );
+
+      setError(
+        error?.message ||
+          "Could not save Home layout."
+      );
+    } finally {
+      setSaving(false);
+    }
+  }
+
+
+  /* =========================
+     SAVE SHOP
+  ========================= */
+
+  async function saveShopLayout() {
+    setSaving(true);
+    setError("");
+    setSuccess("");
+
+    try {
+      for (
+        let index = 0;
+        index < shopItems.length;
+        index++
+      ) {
+        const artwork =
+          shopItems[index];
+
+        const {
+          error,
+        } = await supabase
+          .from("artworks")
+          .update({
+            shop_order:
+              index + 1,
+          })
+          .eq(
+            "id",
+            artwork.id
+          );
+
+        if (error) {
+          throw error;
+        }
+      }
+
+      await fetchArtworks();
+
+      setSuccess(
+        "Shop layout saved."
+      );
+    } catch (error) {
+      console.error(
+        "SHOP LAYOUT ERROR:",
+        error
+      );
+
+      setError(
+        error?.message ||
+          "Could not save Shop layout."
+      );
+    } finally {
+      setSaving(false);
+    }
+  }
+
+
+  /* =========================
+     SORTABLE CARD
+  ========================= */
+
+  function SortableArtwork({
+    artwork,
+  }) {
+    const {
+      attributes,
+      listeners,
+      setNodeRef,
+      transform,
+      transition,
+      isDragging,
+    } = useSortable({
+      id: artwork.id,
+    });
+
+    const style = {
+      transform:
+        CSS.Transform.toString(
+          transform
+        ),
+      transition,
+      opacity: isDragging
+        ? 0.25
+        : 1,
+    };
+
+    return (
+      <div
+        ref={setNodeRef}
+        style={style}
+        {...attributes}
+        {...listeners}
+        className="layout-card"
+      >
+        <div className="layout-card-image">
+          <img
+            src={artwork.image_url}
+            alt={
+              artwork.title ||
+              "Artwork"
+            }
+            draggable="false"
+          />
+        </div>
+
+        <div className="layout-card-info">
+          <strong>
+            {artwork.title ||
+              "Untitled"}
+          </strong>
+        </div>
+      </div>
+    );
+  }
+
+
+  /* =========================
+     DROP ZONE
+  ========================= */
+
+  function LayoutColumn({
+    column,
+    columnIndex,
+  }) {
+    return (
+      <div className="layout-column">
+
+        <div className="layout-column-header">
+          <span>
+            COLUMN{" "}
+            {columnIndex + 1}
+          </span>
+
+          <small>
+            {column.length} ITEMS
+          </small>
+        </div>
+
+
+        <div className="layout-column-body">
+
+          <SortableContext
+            items={column.map(
+              (item) => item.id
+            )}
+            strategy={
+              verticalListSortingStrategy
+            }
+          >
+
+            {column.map(
+              (artwork) => (
+                <SortableArtwork
+                  key={artwork.id}
+                  artwork={artwork}
+                />
+              )
+            )}
+
+          </SortableContext>
+
+
+          {column.length === 0 && (
+            <div className="layout-empty-column">
+              DROP ARTWORK HERE
+            </div>
+          )}
+
+        </div>
+
+      </div>
+    );
+  }
+
+
+  /* =========================
+     ACTIVE ARTWORK
+  ========================= */
+
+  const activeArtwork =
+    activeId
+      ? findArtwork(activeId)
+      : null;
+
+
+  /* =========================
+     RENDER
+  ========================= */
+
+  return (
+    <section className="admin-layout">
+
+      <div className="layout-heading">
+
+        <div>
+          <p className="admin-kicker">
+            VISUAL EDITOR
+          </p>
+
+          <h2>LAYOUT</h2>
+
+          <p className="layout-description">
+            Drag artworks to arrange
+            your pages.
+          </p>
+        </div>
+
+
+        <div className="layout-switcher">
+
+          <button
+            type="button"
+            className={
+              activeLayout === "home"
+                ? "active"
+                : ""
+            }
+            onClick={() =>
+              setActiveLayout("home")
+            }
+          >
+            HOME
+          </button>
+
+          <button
+            type="button"
+            className={
+              activeLayout === "shop"
+                ? "active"
+                : ""
+            }
+            onClick={() =>
+              setActiveLayout("shop")
+            }
+          >
+            SHOP
+          </button>
+
+        </div>
+
+      </div>
+
+
+      {/* HOME */}
+
+      {activeLayout === "home" && (
+        <DndContext
+          sensors={sensors}
+          collisionDetection={
+            closestCenter
+          }
+          onDragStart={
+            handleDragStart
+          }
+          onDragEnd={
+            handleHomeDragEnd
+          }
+          onDragCancel={
+            handleDragCancel
+          }
+        >
+
+          <div className="home-layout-grid">
+
+            {homeColumns.map(
+              (
+                column,
+                index
+              ) => (
+                <LayoutColumn
+                  key={index}
+                  column={column}
+                  columnIndex={index}
+                />
+              )
+            )}
+
+          </div>
+
+
+          <DragOverlay>
+            {activeArtwork ? (
+              <div className="layout-card layout-card-overlay">
+
+                <div className="layout-card-image">
+                  <img
+                    src={
+                      activeArtwork.image_url
+                    }
+                    alt={
+                      activeArtwork.title ||
+                      "Artwork"
+                    }
+                  />
+                </div>
+
+                <div className="layout-card-info">
+                  <strong>
+                    {activeArtwork.title ||
+                      "Untitled"}
+                  </strong>
+                </div>
+
+              </div>
+            ) : null}
+          </DragOverlay>
+
+
+          <div className="layout-actions">
+
+            <span>
+              HOME LAYOUT
+            </span>
+
+            <button
+              type="button"
+              className="admin-button"
+              onClick={
+                saveHomeLayout
+              }
+              disabled={saving}
+            >
+              {saving
+                ? "SAVING..."
+                : "SAVE HOME LAYOUT"}
+            </button>
+
+          </div>
+
+        </DndContext>
+      )}
+
+
+      {/* SHOP */}
+
+      {activeLayout === "shop" && (
+        <DndContext
+          sensors={sensors}
+          collisionDetection={
+            closestCenter
+          }
+          onDragStart={
+            handleDragStart
+          }
+          onDragEnd={
+            handleShopDragEnd
+          }
+          onDragCancel={
+            handleDragCancel
+          }
+        >
+
+          <div className="shop-layout-editor">
+
+            <SortableContext
+              items={shopItems.map(
+                (item) => item.id
+              )}
+              strategy={
+                verticalListSortingStrategy
+              }
+            >
+
+              {shopItems.map(
+                (artwork) => (
+                  <SortableArtwork
+                    key={artwork.id}
+                    artwork={artwork}
+                  />
+                )
+              )}
+
+            </SortableContext>
+
+            {shopItems.length === 0 && (
+              <div className="layout-empty-column">
+                NO SHOP ARTWORKS
+              </div>
+            )}
+
+          </div>
+
+
+          <DragOverlay>
+            {activeArtwork ? (
+              <div className="layout-card layout-card-overlay">
+
+                <div className="layout-card-image">
+                  <img
+                    src={
+                      activeArtwork.image_url
+                    }
+                    alt={
+                      activeArtwork.title ||
+                      "Artwork"
+                    }
+                  />
+                </div>
+
+                <div className="layout-card-info">
+                  <strong>
+                    {activeArtwork.title ||
+                      "Untitled"}
+                  </strong>
+                </div>
+
+              </div>
+            ) : null}
+          </DragOverlay>
+
+
+          <div className="layout-actions">
+
+            <span>
+              SHOP LAYOUT
+            </span>
+
+            <button
+              type="button"
+              className="admin-button"
+              onClick={
+                saveShopLayout
+              }
+              disabled={saving}
+            >
+              {saving
+                ? "SAVING..."
+                : "SAVE SHOP LAYOUT"}
+            </button>
+
+          </div>
+
+        </DndContext>
+      )}
+
+    </section>
+  );
+}
+
 /* =========================
    ADMIN DASHBOARD
 ========================= */
@@ -1722,6 +2547,162 @@ async function handleEdit(event) {
   }
 
 
+  /* --------- move artwork ------- */
+  /* ---------- SAVE HOME LAYOUT ---------- */
+
+async function saveHomeLayout(homeColumns) {
+  setError("");
+  setSuccess("");
+
+  try {
+    const updates = [];
+
+    homeColumns.forEach(
+      (column, columnIndex) => {
+        column.forEach(
+          (artwork, artworkIndex) => {
+            updates.push({
+              id: artwork.id,
+
+              column_position:
+                columnIndex + 1,
+
+              sort_order:
+                artworkIndex + 1,
+            });
+          }
+        );
+      }
+    );
+
+    for (const update of updates) {
+      const { error } =
+        await supabase
+          .from("artworks")
+          .update({
+            column_position:
+              update.column_position,
+
+            sort_order:
+              update.sort_order,
+          })
+          .eq("id", update.id);
+
+      if (error) {
+        throw error;
+      }
+    }
+
+    // Update local admin state too
+    setArtworks((current) =>
+      current.map((artwork) => {
+        const updatedArtwork =
+          updates.find(
+            (item) =>
+              item.id === artwork.id
+          );
+
+        if (!updatedArtwork) {
+          return artwork;
+        }
+
+        return {
+          ...artwork,
+
+          column_position:
+            updatedArtwork.column_position,
+
+          sort_order:
+            updatedArtwork.sort_order,
+        };
+      })
+    );
+
+    setSuccess(
+      "Home layout saved."
+    );
+  } catch (error) {
+    console.error(
+      "HOME LAYOUT ERROR:",
+      error
+    );
+
+    setError(
+      error?.message ||
+      "Could not save Home layout."
+    );
+  }
+}
+
+
+/* ---------- SAVE SHOP LAYOUT ---------- */
+
+async function saveShopLayout(shopItems) {
+  setError("");
+  setSuccess("");
+
+  try {
+    const updates =
+      shopItems.map(
+        (artwork, index) => ({
+          id: artwork.id,
+          shop_order: index + 1,
+        })
+      );
+
+    for (const update of updates) {
+      const { error } =
+        await supabase
+          .from("artworks")
+          .update({
+            shop_order:
+              update.shop_order,
+          })
+          .eq("id", update.id);
+
+      if (error) {
+        throw error;
+      }
+    }
+
+    // Update local admin state too
+    setArtworks((current) =>
+      current.map((artwork) => {
+        const updatedArtwork =
+          updates.find(
+            (item) =>
+              item.id === artwork.id
+          );
+
+        if (!updatedArtwork) {
+          return artwork;
+        }
+
+        return {
+          ...artwork,
+
+          shop_order:
+            updatedArtwork.shop_order,
+        };
+      })
+    );
+
+    setSuccess(
+      "Shop layout saved."
+    );
+  } catch (error) {
+    console.error(
+      "SHOP LAYOUT ERROR:",
+      error
+    );
+
+    setError(
+      error?.message ||
+      "Could not save Shop layout."
+    );
+  }
+}
+
   /* ---------- DELETE ARTWORK ---------- */
 
   async function deleteArtwork(
@@ -2173,38 +3154,54 @@ async function handleEdit(event) {
 
         {/* TABS */}
 
-        <div className="admin-tabs">
+<div className="admin-tabs">
 
-          <button
-            className={`admin-tab ${
-              activeTab ===
-              "artworks"
-                ? "active"
-                : ""
-            }`}
-            onClick={() =>
-              setActiveTab(
-                "artworks"
-              )
-            }
-          >
-            ARTWORKS
-          </button>
+  <button
+    type="button"
+    className={`admin-tab ${
+      activeTab === "artworks"
+        ? "active"
+        : ""
+    }`}
+    onClick={() =>
+      setActiveTab("artworks")
+    }
+  >
+    ARTWORKS
+  </button>
 
-          <button
-            className={`admin-tab ${
-              activeTab === "blog"
-                ? "active"
-                : ""
-            }`}
-            onClick={() =>
-              setActiveTab("blog")
-            }
-          >
-            BLOG
-          </button>
 
-        </div>
+  <button
+    type="button"
+    className={`admin-tab ${
+      activeTab === "blog"
+        ? "active"
+        : ""
+    }`}
+    onClick={() =>
+      setActiveTab("blog")
+    }
+  >
+    BLOG
+  </button>
+
+
+  <button
+    type="button"
+    className={`admin-tab ${
+      activeTab === "layout"
+        ? "active"
+        : ""
+    }`}
+    onClick={() =>
+      setActiveTab("layout")
+    }
+  >
+    LAYOUT
+  </button>
+
+</div>
+        
 
 
         {/* MESSAGES */}
@@ -2796,6 +3793,18 @@ async function handleEdit(event) {
           </>
         )}
 
+{/* =========================
+    LAYOUT TAB
+========================= */}
+
+{activeTab === "layout" && (
+  <AdminLayout
+    artworks={artworks}
+    fetchArtworks={fetchArtworks}
+    setError={setError}
+    setSuccess={setSuccess}
+  />
+)}
 
         {/* =========================
             BLOG TAB
