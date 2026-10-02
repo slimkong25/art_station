@@ -30,7 +30,7 @@ import {
 
 import { CSS } from "@dnd-kit/utilities";
 
-import SketchbookPage from "./sketchbook";
+import SketchbookPage from "./Sketchbook";
 import AdminSketchbooks from "./AdminSketchbooks";
 
 import { supabase } from "./lib/supabaseClient";
