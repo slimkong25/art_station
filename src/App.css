@@ -2186,3 +2186,22 @@ body {
 .admin-add-palette:hover {
   opacity: 1;
 }
+
+@media (max-width: 800px) {
+  .gallery {
+    display: flex;
+    flex-direction: column;
+    gap: 32px;
+
+    padding: 0 20px 80px;
+  }
+
+  .gallery-column {
+    display: contents;
+  }
+
+  .artwork {
+    width: 100%;
+    height: auto;
+  }
+}
