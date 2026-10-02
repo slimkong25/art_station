@@ -1432,11 +1432,11 @@ async function handleUpload(event) {
       "UPLOAD ERROR:",
       error
     );
-
+console.error("UPLOAD ERROR:", error);
     setError(
-      error?.message ||
-      "Upload failed."
-    );
+  error?.message ||
+  "Upload failed. Check browser console."
+);
 
   } finally {
     setUploading(false);
