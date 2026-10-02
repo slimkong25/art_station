@@ -30,6 +30,9 @@ import {
 
 import { CSS } from "@dnd-kit/utilities";
 
+import SketchbookPage from "./sketchbook";
+import AdminSketchbooks from "./AdminSketchbooks";
+
 import { supabase } from "./lib/supabaseClient";
 import "./App.css";
 
@@ -57,6 +60,9 @@ function Header() {
         >
           BLOG
         </Link>
+        <Link to="/sketchbook">
+  SKETCHBOOK
+</Link>
 
         <Link to="/playground">
           PLAYGROUND
@@ -3154,6 +3160,8 @@ async function saveShopLayout(shopItems) {
 
         {/* TABS */}
 
+{/* TABS */}
+
 <div className="admin-tabs">
 
   <button
@@ -3189,6 +3197,21 @@ async function saveShopLayout(shopItems) {
   <button
     type="button"
     className={`admin-tab ${
+      activeTab === "sketchbook"
+        ? "active"
+        : ""
+    }`}
+    onClick={() =>
+      setActiveTab("sketchbook")
+    }
+  >
+    SKETCHBOOK
+  </button>
+
+
+  <button
+    type="button"
+    className={`admin-tab ${
       activeTab === "layout"
         ? "active"
         : ""
@@ -3201,7 +3224,6 @@ async function saveShopLayout(shopItems) {
   </button>
 
 </div>
-        
 
 
         {/* MESSAGES */}
@@ -3801,6 +3823,18 @@ async function saveShopLayout(shopItems) {
   <AdminLayout
     artworks={artworks}
     fetchArtworks={fetchArtworks}
+    setError={setError}
+    setSuccess={setSuccess}
+  />
+)}
+
+
+{/* =========================
+    SKETCHBOOK TAB
+========================= */}
+
+{activeTab === "sketchbook" && (
+  <AdminSketchbooks
     setError={setError}
     setSuccess={setSuccess}
   />
@@ -4516,6 +4550,15 @@ function App() {
   return (
     <div className="site">
       <Routes>
+        <Route
+  path="/sketchbook"
+  element={<SketchbookPage />}
+/>
+
+<Route
+  path="/sketchbook/:id"
+  element={<SketchbookPage />}
+/>
 
         <Route
           path="/"

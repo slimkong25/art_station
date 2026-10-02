@@ -2773,3 +2773,384 @@ body {
   }
 
 }
+
+/* ========================= */
+/* SKETCHBOOK ARCHIVE         */
+/* ========================= */
+
+
+/* ================================================= */
+/* SKETCHBOOK                                         */
+/* ================================================= */
+
+/* ---------- ARCHIVE ---------- */
+/* ================================================= */
+/* SKETCHBOOK ADMIN                                   */
+/* ================================================= */
+
+.admin-sketchbooks {
+  width: 100%;
+  margin-top: 56px;
+
+  padding: 46px 44px 60px;
+
+  box-sizing: border-box;
+
+  background: #ffffff;
+}
+
+
+/* ---------- FORM ---------- */
+
+.admin-sketchbook-form {
+  width: 100%;
+
+  display: flex;
+  flex-direction: column;
+
+  gap: 30px;
+}
+
+
+/* ---------- COVER ---------- */
+
+.sketchbook-image-upload {
+  width: 100%;
+
+  padding: 32px;
+
+  box-sizing: border-box;
+
+  border: 1px dashed #bdbdb8;
+
+  background: #fafaf8;
+}
+
+.sketchbook-image-upload label {
+  display: flex;
+  flex-direction: column;
+
+  gap: 10px;
+
+  font-size: 12px;
+  letter-spacing: 1.2px;
+}
+
+.sketchbook-file-name {
+  font-size: 12px;
+
+  letter-spacing: 0;
+
+  opacity: 0.6;
+}
+
+.sketchbook-file-note {
+  font-size: 12px;
+
+  letter-spacing: 0;
+
+  opacity: 0.5;
+}
+
+
+/* ---------- BASIC INFO ---------- */
+
+.sketchbook-form-grid {
+  display: grid;
+
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+
+  gap: 30px;
+}
+
+.sketchbook-form-grid label {
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 10px;
+
+  font-size: 12px;
+
+  letter-spacing: 1.2px;
+}
+
+
+/* ---------- DESCRIPTION ---------- */
+
+.admin-sketchbook-form > label {
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 10px;
+
+  font-size: 12px;
+
+  letter-spacing: 1.2px;
+}
+
+
+/* ---------- PAGES ---------- */
+
+.sketchbook-pages-upload,
+.sketchbook-existing-pages {
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 12px;
+}
+
+.sketchbook-pages-upload > label,
+.sketchbook-existing-pages > label {
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 10px;
+
+  font-size: 12px;
+
+  letter-spacing: 1.2px;
+}
+
+
+/* ---------- PAGE LIST ---------- */
+
+.sketchbook-page-list {
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 8px;
+}
+
+.sketchbook-admin-page {
+  display: flex;
+
+  align-items: center;
+
+  justify-content: space-between;
+
+  gap: 20px;
+
+  width: 100%;
+
+  box-sizing: border-box;
+
+  padding: 14px 16px;
+
+  border: 1px solid #ddddda;
+
+  background: #f8f8f5;
+}
+
+.sketchbook-admin-page-info {
+  min-width: 0;
+
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 5px;
+}
+
+.sketchbook-admin-page-info strong {
+  font-size: 10px;
+
+  letter-spacing: 1.2px;
+}
+
+.sketchbook-admin-page-info span {
+  min-width: 0;
+
+  font-size: 12px;
+
+  opacity: 0.55;
+
+  overflow: hidden;
+
+  text-overflow: ellipsis;
+
+  white-space: nowrap;
+}
+
+.sketchbook-page-controls {
+  display: flex;
+
+  gap: 5px;
+
+  flex-shrink: 0;
+}
+
+.sketchbook-page-controls button {
+  width: 32px;
+  height: 32px;
+
+  border: 1px solid #d3d3cf;
+
+  background: #ffffff;
+
+  cursor: pointer;
+
+  font-size: 14px;
+}
+
+.sketchbook-page-controls button:hover {
+  background: #111111;
+
+  color: #ffffff;
+}
+
+.sketchbook-page-controls button:disabled {
+  opacity: 0.25;
+
+  cursor: default;
+}
+
+.sketchbook-page-controls button:disabled:hover {
+  background: #ffffff;
+
+  color: #111111;
+}
+
+
+/* ---------- PUBLISH ---------- */
+
+.sketchbook-publish {
+  margin-top: 2px;
+}
+
+
+/* ---------- EXISTING BOOKS ---------- */
+
+.admin-sketchbook-list {
+  margin-top: 90px;
+
+  padding-top: 40px;
+
+  border-top: 1px solid #ddddda;
+}
+
+.admin-sketchbook-items {
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 10px;
+}
+
+.admin-sketchbook-item {
+  display: grid;
+
+  grid-template-columns:
+    90px
+    minmax(0, 1fr)
+    auto;
+
+  align-items: center;
+
+  gap: 20px;
+
+  padding: 12px;
+
+  border: 1px solid #deded9;
+
+  background: #fafaf8;
+
+  box-sizing: border-box;
+}
+
+.admin-sketchbook-item img {
+  display: block;
+
+  width: 90px;
+  height: 110px;
+
+  object-fit: cover;
+
+  background: #f1f1ed;
+}
+
+.admin-sketchbook-item-info {
+  min-width: 0;
+}
+
+.admin-sketchbook-item-info h3 {
+  margin: 0 0 6px;
+
+  font-size: 15px;
+
+  font-weight: 500;
+}
+
+.admin-sketchbook-item-info p {
+  margin: 0 0 6px;
+
+  font-size: 12px;
+
+  opacity: 0.5;
+}
+
+.admin-sketchbook-item-info small {
+  font-size: 10px;
+
+  letter-spacing: 1px;
+
+  opacity: 0.4;
+}
+
+
+/* ================================================= */
+/* MOBILE                                             */
+/* ================================================= */
+
+@media (max-width: 800px) {
+
+  .admin-sketchbooks {
+    margin-top: 35px;
+
+    padding:
+      30px
+      24px
+      45px;
+  }
+
+  .sketchbook-form-grid {
+    grid-template-columns: 1fr;
+
+    gap: 24px;
+  }
+
+  .sketchbook-image-upload {
+    padding: 24px;
+  }
+
+  .admin-sketchbook-item {
+    grid-template-columns:
+      70px
+      minmax(0, 1fr);
+  }
+
+  .admin-sketchbook-item img {
+    width: 70px;
+    height: 90px;
+  }
+
+  .admin-sketchbook-item
+  .admin-row-buttons {
+    grid-column: 1 / -1;
+  }
+
+}
+
+.sketchbook-upload-help {
+  margin: 0;
+
+  font-size: 12px;
+  line-height: 1.5;
+
+  opacity: 0.5;
+}
