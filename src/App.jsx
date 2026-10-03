@@ -32,6 +32,7 @@ import { CSS } from "@dnd-kit/utilities";
 
 import SketchbookPage from "./Sketchbook";
 import AdminSketchbooks from "./AdminSketchbooks";
+import AdminAbout from "./AdminAbout";
 
 import { supabase } from "./lib/supabaseClient";
 import "./App.css";
@@ -3222,6 +3223,19 @@ async function saveShopLayout(shopItems) {
   >
     LAYOUT
   </button>
+  <button
+  type="button"
+  className={`admin-tab ${
+    activeTab === "about"
+      ? "active"
+      : ""
+  }`}
+  onClick={() =>
+    setActiveTab("about")
+  }
+>
+  ABOUT ME
+</button>
 
 </div>
 
@@ -3839,6 +3853,18 @@ async function saveShopLayout(shopItems) {
     setSuccess={setSuccess}
   />
 )}
+
+{/* =========================
+    ABOUT ME TAB
+========================= */}
+
+{activeTab === "about" && (
+  <AdminAbout
+    setError={setError}
+    setSuccess={setSuccess}
+  />
+)}
+
 
         {/* =========================
             BLOG TAB
@@ -4524,24 +4550,156 @@ function Playground() {
 }
 
 function About() {
+  const [about, setAbout] =
+    useState(null);
+
+  const [loading, setLoading] =
+    useState(true);
+
+  const [error, setError] =
+    useState("");
+
+  useEffect(() => {
+    async function fetchAbout() {
+      const {
+        data,
+        error,
+      } =
+        await supabase
+          .from("about_page")
+          .select("*")
+          .eq("id", 1)
+          .maybeSingle();
+
+      if (error) {
+        console.error(
+          "ABOUT ERROR:",
+          error
+        );
+
+        setError(
+          error.message
+        );
+
+        setLoading(false);
+
+        return;
+      }
+
+      setAbout(data);
+      setLoading(false);
+    }
+
+    fetchAbout();
+  }, []);
+
+
+  if (loading) {
+    return (
+      <>
+        <Header />
+
+        <main className="about-page">
+          <div className="about-loading">
+            Loading...
+          </div>
+        </main>
+      </>
+    );
+  }
+
+
+  if (error) {
+    return (
+      <>
+        <Header />
+
+        <main className="about-page">
+          <div className="about-loading">
+            {error}
+          </div>
+        </main>
+      </>
+    );
+  }
+
+
+  const imageUrl =
+    about?.image_path
+      ? supabase.storage
+          .from("about")
+          .getPublicUrl(
+            about.image_path
+          ).data.publicUrl
+      : "";
+
+
   return (
     <>
       <Header />
 
-      <section className="page-placeholder">
-        <h1>ABOUT ME</h1>
+      <main className="about-page">
 
-        <p>
-          Artist, maker, experimenter
-          and professional art
-          overthinker.
-        </p>
-      </section>
+        <div className="about-heading">
+
+          <span>
+            ABOUT ME
+          </span>
+
+          <h1>
+            {about?.name ||
+              "KARTHIK"}
+          </h1>
+
+        </div>
+
+
+        <section className="about-content">
+
+          {/* IMAGE */}
+
+{imageUrl && (
+  <div
+    className={`about-image-wrap shape-${
+      about?.image_shape || "natural"
+    }`}
+  >
+    <img
+      src={imageUrl}
+      alt={
+        about?.name || "Karthik"
+      }
+    />
+  </div>
+)}
+
+
+          {/* TEXT */}
+
+          <div className="about-copy">
+
+            {about?.intro && (
+              <p className="about-intro">
+                {about.intro}
+              </p>
+            )}
+
+            {about?.bio && (
+              <div className="about-bio">
+                {about.bio}
+              </div>
+            )}
+
+          </div>
+
+        </section>
+
+      </main>
+
+      <Footer />
     </>
   );
 }
-
-
 /* =========================
    ROUTER
 ========================= */

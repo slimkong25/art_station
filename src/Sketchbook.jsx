@@ -245,315 +245,270 @@ function SketchbookArchive() {
 ========================= */
 
 function SketchbookViewer() {
-  const { id } =
-    useParams();
+  const { id } = useParams();
+  const navigate = useNavigate();
 
-  const navigate =
-    useNavigate();
+  const [book, setBook] = useState(null);
+  const [pages, setPages] = useState([]);
+  const [currentPage, setCurrentPage] = useState(0);
+  const [loading, setLoading] = useState(true);
 
-  const [book, setBook] =
-    useState(null);
+  const getPublicUrl = (path) => {
+    const { data } = supabase.storage
+      .from("sketchbooks")
+      .getPublicUrl(path);
 
-  const [pages, setPages] =
-    useState([]);
-
-  const [currentPage, setCurrentPage] =
-    useState(0);
-
-  const [loading, setLoading] =
-    useState(true);
-
-  const [error, setError] =
-    useState("");
-
+    return data.publicUrl;
+  };
 
   useEffect(() => {
-    async function fetchBook() {
+    async function fetchSketchbook() {
       setLoading(true);
-      setError("");
 
-      const {
-        data: bookData,
-        error: bookError,
-      } = await supabase
+      const { data: bookData, error: bookError } = await supabase
         .from("sketchbooks")
         .select("*")
         .eq("id", id)
         .eq("published", true)
         .single();
 
-      if (bookError) {
-        console.error(
-          "BOOK ERROR:",
-          bookError
-        );
-
-        setError(
-          "Sketchbook not found."
-        );
-
+      if (bookError || !bookData) {
         setLoading(false);
-
         return;
       }
 
-
-      const {
-        data: pageData,
-        error: pageError,
-      } = await supabase
+      const { data: pageData, error: pageError } = await supabase
         .from("sketchbook_pages")
         .select("*")
-        .eq(
-          "sketchbook_id",
-          id
-        )
-        .order(
-          "page_number",
-          {
-            ascending: true,
-          }
-        );
+        .eq("sketchbook_id", id)
+        .order("page_number", { ascending: true });
 
       if (pageError) {
-        console.error(
-          "PAGE ERROR:",
-          pageError
-        );
-
-        setError(
-          pageError.message
-        );
-
-        setLoading(false);
-
-        return;
+        console.error(pageError);
       }
 
-
-      setBook(
-        bookData
-      );
-
-      setPages(
-        pageData || []
-      );
-
+      setBook(bookData);
+      setPages(pageData || []);
       setCurrentPage(0);
-
       setLoading(false);
     }
 
-    fetchBook();
+    fetchSketchbook();
   }, [id]);
 
+  const totalPages = pages.length + 2;
 
-  /* =========================
-     NAVIGATION
-  ========================= */
-
-  function nextPage() {
-    setCurrentPage(
-      (current) =>
-        Math.min(
-          current + 1,
-          pages.length
-        )
-    );
+const getPageUrl = (pageNumber) => {
+  if (pageNumber === 0) {
+    return getPublicUrl(book.cover_path);
   }
 
+  const page = pages[pageNumber - 1];
 
-  function previousPage() {
-    setCurrentPage(
-      (current) =>
-        Math.max(
-          current - 1,
-          0
-        )
-    );
+  if (!page) {
+    return null;
   }
 
+  return getPublicUrl(page.image_path);
+};
 
-  /* =========================
-     KEYBOARD
-  ========================= */
+  const goToPage = (pageNumber) => {
+    const target = Math.max(
+      0,
+      Math.min(pageNumber, totalPages - 1)
+    );
 
+    setCurrentPage(target);
+  };
+
+  const nextPage = () => {
+    setCurrentPage((prev) =>
+      Math.min(prev + 1, totalPages - 1)
+    );
+  };
+
+  const previousPage = () => {
+    setCurrentPage((prev) =>
+      Math.max(prev - 1, 0)
+    );
+  };
+
+  /*
+    PRELOAD nearby pages.
+
+    We load the pages around the current page so that
+    moving forward/backward doesn't have to start from zero.
+  */
   useEffect(() => {
-    function handleKeyboard(
-      event
-    ) {
-      if (
-        event.key === "ArrowRight" ||
-        event.key === ">"
-      ) {
+    if (!book || totalPages <= 0) {
+      return;
+    }
+
+    const pagesToPreload = [
+      currentPage - 2,
+      currentPage - 1,
+      currentPage,
+      currentPage + 1,
+      currentPage + 2,
+    ];
+
+    pagesToPreload.forEach((pageNumber) => {
+      if (pageNumber < 0 || pageNumber >= totalPages) {
+        return;
+      }
+
+      const url = getPageUrl(pageNumber);
+
+      if (!url) {
+        return;
+      }
+
+      const img = new Image();
+      img.src = url;
+
+      if (img.decode) {
+        img.decode().catch(() => {});
+      }
+    });
+  }, [currentPage, book, pages]);
+
+  /*
+    Keyboard navigation
+  */
+  useEffect(() => {
+    const handleKeyDown = (event) => {
+      if (event.key === "ArrowRight") {
         nextPage();
       }
 
-      if (
-        event.key === "ArrowLeft" ||
-        event.key === "<"
-      ) {
+      if (event.key === "ArrowLeft") {
         previousPage();
       }
 
-      if (
-        event.key === "Escape"
-      ) {
-        navigate(
-          "/sketchbook"
-        );
+      if (event.key === "Escape") {
+        navigate("/sketchbook");
       }
-    }
+    };
 
-    window.addEventListener(
-      "keydown",
-      handleKeyboard
-    );
+    window.addEventListener("keydown", handleKeyDown);
 
     return () => {
-      window.removeEventListener(
-        "keydown",
-        handleKeyboard
-      );
+      window.removeEventListener("keydown", handleKeyDown);
     };
-  });
+  }, [navigate, totalPages]);
 
+  /*
+    Browser-style page input.
+    Typing 19 means page 19.
+    The cover is page 1.
+  */
+  const displayPageNumber = currentPage + 1;
+
+  const handlePageInput = (event) => {
+    const value = Number(event.target.value);
+
+    if (!Number.isNaN(value)) {
+      goToPage(value - 1);
+    }
+  };
 
   if (loading) {
     return (
       <div className="sketchbook-viewer">
-        <div className="sketchbook-status">
-          OPENING SKETCHBOOK...
+        <div className="sketchbook-viewer-loading">
+          Loading...
         </div>
       </div>
     );
   }
 
-
-  if (error || !book) {
+  if (!book) {
     return (
       <div className="sketchbook-viewer">
-
-        <button
-          type="button"
-          className="sketchbook-viewer-back"
-          onClick={() =>
-            navigate(
-              "/sketchbook"
-            )
-          }
-        >
-          ← BACK
-        </button>
-
-        <div className="sketchbook-status sketchbook-status-error">
-          {error}
+        <div className="sketchbook-viewer-loading">
+          Sketchbook not found.
         </div>
-
       </div>
     );
   }
 
-
-  /*
-    PAGE 0 = COVER
-    PAGE 1 = FIRST UPLOADED PAGE
-  */
-
-  const imagePath =
-    currentPage === 0
-      ? book.cover_path
-      : pages[
-          currentPage - 1
-        ]?.image_path;
-
+  const currentImage = getPageUrl(currentPage);
 
   return (
     <div className="sketchbook-viewer">
 
+      {/* Close */}
       <button
         type="button"
-        className="sketchbook-viewer-back"
-        onClick={() =>
-          navigate(
-            "/sketchbook"
-          )
-        }
+        className="sketchbook-viewer-close"
+        onClick={() => navigate("/sketchbook")}
+        aria-label="Close sketchbook"
       >
-        ← BACK TO SKETCHBOOK
+        ×
       </button>
 
+      {/* Artwork page */}
+      <div className="sketchbook-viewer-stage">
+        {currentPage === totalPages - 1 ? (
+  <div className="sketchbook-final-page">
+    {book.description && (
+      <p>{book.description}</p>
+    )}
+  </div>
+) : (
+  currentImage && (
+    <img
+      key={currentImage}
+      src={currentImage}
+      alt={`${book.title} page ${displayPageNumber}`}
+      className="sketchbook-viewer-image"
+      draggable="false"
+    />
+  )
+)}
+      </div>
 
-      <div className="sketchbook-viewer-title">
+      {/* ONE navigation indicator */}
+      <div className="sketchbook-viewer-controls">
 
-        <span>
-          {book.title}
+        <button
+          type="button"
+          onClick={previousPage}
+          disabled={currentPage === 0}
+          className="sketchbook-page-arrow"
+          aria-label="Previous page"
+        >
+          ←
+        </button>
+
+        <input
+          type="number"
+          min="1"
+          max={totalPages}
+          value={displayPageNumber}
+          onChange={handlePageInput}
+          className="sketchbook-page-input"
+          aria-label="Current page"
+        />
+
+        <span className="sketchbook-page-total">
+          / {totalPages}
         </span>
 
-        <span>
-          {currentPage + 1}
-          {" / "}
-          {pages.length + 1}
-        </span>
+        <button
+          type="button"
+          onClick={nextPage}
+          disabled={currentPage === totalPages - 1}
+          className="sketchbook-page-arrow"
+          aria-label="Next page"
+        >
+          →
+        </button>
 
       </div>
-
-
-      <button
-        type="button"
-        className="sketchbook-viewer-arrow sketchbook-viewer-arrow-left"
-        onClick={
-          previousPage
-        }
-        disabled={
-          currentPage === 0
-        }
-      >
-        ‹
-      </button>
-
-
-      <div className="sketchbook-viewer-page">
-
-        {imagePath && (
-          <img
-            src={getPublicUrl(
-              imagePath
-            )}
-            alt={`${book.title} page ${
-              currentPage + 1
-            }`}
-          />
-        )}
-
-      </div>
-
-
-      <button
-        type="button"
-        className="sketchbook-viewer-arrow sketchbook-viewer-arrow-right"
-        onClick={
-          nextPage
-        }
-        disabled={
-          currentPage >=
-          pages.length
-        }
-      >
-        ›
-      </button>
-
-
-      <div className="sketchbook-viewer-counter">
-        {currentPage + 1}
-        {" / "}
-        {pages.length + 1}
-      </div>
-
     </div>
   );
 }
-
 
 /* =========================
    PAGE ENTRY
