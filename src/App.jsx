@@ -11,6 +11,8 @@ import {
   useParams,
 } from "react-router";
 
+import Playground from "./Playground";
+
 import {
   DndContext,
   DragOverlay,
@@ -4528,26 +4530,6 @@ ${idea}`
   );
 }
 
-function Playground() {
-  return (
-    <>
-      <Header />
-
-      <main className="page-placeholder playground-placeholder">
-        <p className="playground-kicker">
-          PLAYGROUND
-        </p>
-
-        <h1>COME PLAY WITH COLOR.</h1>
-
-        <p>
-          Gradients, palettes, drawing and
-          other little experiments.
-        </p>
-      </main>
-    </>
-  );
-}
 
 function About() {
   const [about, setAbout] =
@@ -4746,13 +4728,18 @@ function App() {
             <BlogPost />
           }
         />
+<Route
+  path="/playground"
+  element={
+    <>
+      <Header />
 
-        <Route
-          path="/playground"
-          element={
-            <Playground />
-          }
-        />
+      <Playground />
+
+      <Footer />
+    </>
+  }
+/>
 
         <Route
           path="/about"

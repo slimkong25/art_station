@@ -1,0 +1,179 @@
+.playground-page {
+  width: 100%;
+
+  min-height: 100vh;
+
+  padding-bottom: 60px;
+}
+
+
+/* =========================
+   HEADING
+========================= */
+
+.playground-heading {
+  width: min(1150px, 92vw);
+
+  margin: 0 auto;
+
+  padding:
+    55px 0 30px;
+}
+
+
+.playground-heading span {
+  display: block;
+
+  margin-bottom: 10px;
+
+  font-size: 10px;
+
+  font-weight: 700;
+
+  letter-spacing: 2px;
+}
+
+
+.playground-heading h1 {
+  margin: 0;
+
+  font-size:
+    clamp(42px, 6vw, 76px);
+
+  line-height: 0.95;
+
+  font-weight: 700;
+
+  letter-spacing: -3px;
+}
+
+
+.playground-heading p {
+  margin: 17px 0 0;
+
+  font-size: 14px;
+
+  opacity: 0.5;
+}
+
+
+/* =========================
+   SWITCHER
+========================= */
+
+.playground-switcher {
+  width: min(1150px, 92vw);
+
+  margin: 0 auto;
+
+  display: flex;
+
+  gap: 6px;
+
+  border-bottom:
+    1px solid #111;
+}
+
+
+.playground-tab {
+  padding:
+    12px 20px;
+
+  border:
+    1px solid #111;
+
+  border-bottom:
+    none;
+
+  background:
+    transparent;
+
+  color:
+    #111;
+
+  font-family:
+    inherit;
+
+  font-size:
+    10px;
+
+  font-weight:
+    600;
+
+  letter-spacing:
+    1.5px;
+
+  cursor:
+    pointer;
+
+  transition:
+    background 0.2s ease,
+    color 0.2s ease;
+}
+
+
+.playground-tab:hover,
+.playground-tab.active {
+  background:
+    #111;
+
+  color:
+    white;
+}
+
+
+/* =========================
+   WORKSPACE
+========================= */
+
+.playground-workspace {
+  width: 100%;
+}
+
+
+/* =========================
+   MOBILE
+========================= */
+
+@media (max-width: 600px) {
+
+  .playground-heading {
+    width: 94vw;
+
+    padding-top:
+      35px;
+
+    padding-bottom:
+      25px;
+  }
+
+
+  .playground-heading h1 {
+    font-size:
+      clamp(40px, 12vw, 60px);
+
+    letter-spacing:
+      -2px;
+  }
+
+
+  .playground-switcher {
+    width: 94vw;
+  }
+
+
+  .playground-tab {
+    flex:
+      1;
+
+    padding:
+      12px 6px;
+
+    font-size:
+      9px;
+
+    letter-spacing:
+      1px;
+  }
+
+}

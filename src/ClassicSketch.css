@@ -1,0 +1,393 @@
+.classic-workspace {
+  width: min(1150px, 92vw);
+
+  margin: 0 auto;
+
+  padding: 30px 0 60px;
+
+  display: grid;
+
+  grid-template-columns:
+    minmax(0, 1fr)
+    220px;
+
+  gap: 55px;
+
+  align-items: center;
+}
+
+
+/* =========================
+   PAPER
+========================= */
+
+.classic-drawing-area {
+  width: min(720px, 100%);
+
+  aspect-ratio: 1 / 1;
+
+  justify-self: center;
+
+  padding: 18px;
+
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+
+  background:
+    #fbf8f1;
+
+  background-image:
+    radial-gradient(
+      rgba(0, 0, 0, 0.025)
+      0.6px,
+      transparent 0.6px
+    );
+
+  background-size: 5px 5px;
+
+  border: 1px solid #111;
+
+  box-shadow:
+    0 8px 30px
+    rgba(0, 0, 0, 0.05);
+
+  touch-action: none;
+
+  overscroll-behavior: contain;
+}
+
+
+.classic-canvas {
+  width: 100%;
+  height: 100%;
+
+  display: block;
+
+  cursor: crosshair;
+
+  touch-action: none;
+
+  user-select: none;
+
+  -webkit-user-select: none;
+}
+
+
+/* =========================
+   TOOL PANEL
+========================= */
+
+.classic-tool-panel {
+  align-self: stretch;
+
+  display: flex;
+
+  flex-direction: column;
+
+  justify-content: center;
+
+  gap: 30px;
+}
+
+
+.classic-tool-section {
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 9px;
+}
+
+
+.classic-label {
+  font-size: 10px;
+
+  font-weight: 700;
+
+  letter-spacing: 2px;
+
+  margin-bottom: 3px;
+}
+
+
+/* =========================
+   TOOL BUTTONS
+========================= */
+
+.classic-tool-button {
+  width: 100%;
+
+  min-height: 42px;
+
+  padding: 10px 13px;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: flex-start;
+
+  gap: 10px;
+
+  background: transparent;
+
+  border: 1px solid #111;
+
+  color: #111;
+
+  font-size: 10px;
+
+  letter-spacing: 1.4px;
+
+  cursor: pointer;
+
+  transition:
+    background 0.2s ease,
+    color 0.2s ease;
+}
+
+
+.classic-tool-button:hover,
+.classic-tool-button.active {
+  background: #111;
+
+  color: #fff;
+}
+
+
+/* =========================
+   COLOR
+========================= */
+
+.classic-color-row {
+  display: flex;
+
+  align-items: center;
+
+  gap: 12px;
+}
+
+
+.classic-color-picker {
+  width: 44px;
+  height: 44px;
+
+  padding: 0;
+
+  border: 1px solid #111;
+
+  background: white;
+
+  cursor: pointer;
+}
+
+
+.classic-hex {
+  font-family:
+    "Courier New",
+    monospace;
+
+  font-size: 10px;
+
+  letter-spacing: 1px;
+}
+
+
+/* =========================
+   HISTORY
+========================= */
+
+.classic-history {
+  display: grid;
+
+  grid-template-columns:
+    1fr 1fr;
+
+  gap: 6px;
+}
+
+
+.classic-small-button {
+  min-height: 40px;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  gap: 6px;
+
+  border: 1px solid #111;
+
+  background: transparent;
+
+  color: #111;
+
+  font-size: 9px;
+
+  letter-spacing: 1px;
+
+  cursor: pointer;
+}
+
+
+.classic-small-button:hover:not(:disabled) {
+  background: #111;
+
+  color: white;
+}
+
+
+.classic-small-button:disabled {
+  opacity: 0.3;
+
+  cursor: default;
+}
+
+
+/* =========================
+   SAVE
+========================= */
+
+.classic-save {
+  display: grid;
+
+  grid-template-columns:
+    1fr 1fr;
+
+  gap: 6px;
+}
+
+
+.classic-format {
+  min-width: 0;
+
+  border: 1px solid #111;
+
+  background: #fff;
+
+  padding: 10px 7px;
+
+  font-size: 10px;
+
+  letter-spacing: 1px;
+
+  cursor: pointer;
+}
+
+
+.classic-save-button {
+  min-height: 42px;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  gap: 7px;
+
+  border: 1px solid #111;
+
+  background: #111;
+
+  color: #fff;
+
+  font-size: 10px;
+
+  letter-spacing: 1.5px;
+
+  cursor: pointer;
+}
+
+
+.classic-save-button:hover {
+  opacity: 0.78;
+}
+
+
+/* =========================
+   CURRENT TOOL
+========================= */
+
+.classic-current-tool {
+  display: flex;
+
+  align-items: center;
+
+  gap: 8px;
+
+  font-size: 9px;
+
+  letter-spacing: 1.5px;
+
+  opacity: 0.45;
+}
+
+
+/* =========================
+   MOBILE
+========================= */
+
+@media (max-width: 900px) {
+
+  .classic-workspace {
+    width: min(720px, 92vw);
+
+    grid-template-columns: 1fr;
+
+    gap: 32px;
+
+    padding-top: 20px;
+  }
+
+
+  .classic-drawing-area {
+    width: min(720px, 92vw);
+  }
+
+
+  .classic-tool-panel {
+    width: min(720px, 92vw);
+
+    margin: 0 auto;
+
+    display: grid;
+
+    grid-template-columns:
+      1fr 1fr;
+
+    gap: 28px 35px;
+
+    align-self: auto;
+  }
+
+}
+
+
+@media (max-width: 520px) {
+
+  .classic-workspace {
+    width: 94vw;
+  }
+
+
+  .classic-drawing-area {
+    width: 94vw;
+
+    padding: 10px;
+  }
+
+
+  .classic-tool-panel {
+    width: 94vw;
+
+    grid-template-columns: 1fr;
+
+    gap: 24px;
+  }
+
+}

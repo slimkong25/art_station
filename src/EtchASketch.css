@@ -1,0 +1,493 @@
+* {
+  box-sizing: border-box;
+}
+
+
+/* =========================
+   PAGE
+========================= */
+
+.etch-workspace {
+  width: min(1150px, 92vw);
+  min-height: 75vh;
+
+  margin: 0 auto;
+  padding: 50px 0;
+
+  display: grid;
+
+  grid-template-columns:
+    minmax(0, 1fr)
+    200px;
+
+  gap: 60px;
+
+  align-items: center;
+}
+
+
+/* =========================
+   DRAWING AREA
+========================= */
+
+.drawing-area {
+  width: min(720px, 100%);
+  aspect-ratio: 1 / 1;
+
+  justify-self: center;
+
+  padding: 18px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  background: #fff;
+
+  border: 1px solid #111;
+
+  touch-action: none;
+  overscroll-behavior: contain;
+}
+
+
+/* =========================
+   GRID
+========================= */
+
+.container {
+  width: 100%;
+  height: 100%;
+
+  display: grid;
+
+  background: #fff;
+
+  overflow: hidden;
+
+  touch-action: none;
+
+  user-select: none;
+  -webkit-user-select: none;
+
+  -webkit-touch-callout: none;
+}
+
+
+.square {
+  min-width: 0;
+  min-height: 0;
+
+  background: #fff;
+
+  border-right: 1px solid #deded8;
+  border-bottom: 1px solid #deded8;
+
+  cursor: crosshair;
+
+  touch-action: none;
+
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+
+/* =========================
+   TOOL PANEL
+========================= */
+
+.tool-panel {
+  align-self: stretch;
+
+  display: flex;
+  flex-direction: column;
+
+  justify-content: center;
+
+  gap: 38px;
+}
+
+
+.tool-section {
+  display: flex;
+  flex-direction: column;
+
+  gap: 12px;
+}
+
+
+.tool-label {
+  font-size: 10px;
+
+  font-weight: 700;
+
+  letter-spacing: 2px;
+
+  color: #111;
+}
+
+
+/* =========================
+   BUTTONS
+========================= */
+
+.tool-button {
+  width: 100%;
+  min-height: 42px;
+
+  padding: 11px 14px;
+
+  border: 1px solid #111;
+
+  background: transparent;
+
+  color: #111;
+
+  font-family:
+    Arial,
+    Helvetica,
+    sans-serif;
+
+  font-size: 11px;
+
+  letter-spacing: 1.5px;
+
+  cursor: pointer;
+
+  transition:
+    background 0.2s ease,
+    color 0.2s ease;
+}
+
+
+.tool-button:hover {
+  background: #111;
+  color: #fff;
+}
+
+
+.tool-button.active {
+  background: #111;
+  color: #fff;
+}
+
+
+/* =========================
+   UNDO / REDO
+========================= */
+
+.undo-redo {
+  display: grid;
+
+  grid-template-columns:
+    1fr 1fr;
+
+  gap: 6px;
+}
+
+
+/* =========================
+   GRID OPTIONS
+========================= */
+
+.grid-options {
+  display: grid;
+
+  grid-template-columns:
+    repeat(5, 1fr);
+
+  gap: 6px;
+}
+
+
+.grid-size {
+  padding: 8px 0;
+
+  border: 1px solid #111;
+
+  background: transparent;
+
+  color: #111;
+
+  font-size: 10px;
+
+  cursor: pointer;
+}
+
+
+.grid-size:hover,
+.grid-size.active {
+  background: #111;
+  color: #fff;
+}
+
+
+/* =========================
+   COLOR
+========================= */
+
+.color-picker-row {
+  display: flex;
+
+  align-items: center;
+
+  gap: 12px;
+}
+
+
+.color-picker {
+  width: 42px;
+  height: 42px;
+
+  padding: 0;
+
+  border: 1px solid #111;
+
+  background: #fff;
+
+  cursor: pointer;
+}
+
+
+.current-color {
+  font-family:
+    "Courier New",
+    monospace;
+
+  font-size: 10px;
+
+  letter-spacing: 1px;
+}
+
+
+/* =========================
+   PALETTE
+========================= */
+
+.palette {
+  display: flex;
+
+  flex-wrap: wrap;
+
+  gap: 9px;
+
+  min-height: 31px;
+}
+
+
+.palette-color {
+  width: 31px;
+  height: 31px;
+
+  flex: 0 0 31px;
+
+  padding: 0;
+
+  border: 1px solid rgba(0, 0, 0, 0.18);
+
+  border-radius: 50%;
+
+  cursor: pointer;
+
+  transition:
+    transform 0.15s ease;
+}
+
+
+.palette-color:hover {
+  transform: scale(1.12);
+}
+
+
+.palette-color.active {
+  outline: 2px solid #111;
+
+  outline-offset: 3px;
+}
+
+
+/* =========================
+   MAGIC PALETTE
+========================= */
+
+.magic-button {
+  width: 100%;
+
+  min-height: 42px;
+
+  border: 1px solid #111;
+
+  background: #111;
+
+  color: #fff;
+
+  font-size: 11px;
+
+  letter-spacing: 1.5px;
+
+  cursor: pointer;
+
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease;
+}
+
+
+.magic-button:hover {
+  opacity: 0.78;
+
+  transform: translateY(-1px);
+}
+
+
+/* =========================
+   SAVE
+========================= */
+
+.save-area {
+  display: grid;
+
+  grid-template-columns:
+    1fr 1fr;
+
+  gap: 6px;
+}
+
+
+.save-format {
+  width: 100%;
+
+  padding: 11px 8px;
+
+  border: 1px solid #111;
+
+  background: #fff;
+
+  color: #111;
+
+  font-size: 10px;
+
+  letter-spacing: 1px;
+
+  cursor: pointer;
+}
+
+
+/* =========================
+   MOBILE
+========================= */
+
+@media (max-width: 850px) {
+
+  .etch-workspace {
+    width: min(700px, 92vw);
+
+    min-height: auto;
+
+    grid-template-columns: 1fr;
+
+    gap: 35px;
+
+    padding: 35px 0 50px;
+  }
+
+
+  .drawing-area {
+    width: min(700px, 92vw);
+  }
+
+
+  .tool-panel {
+    width: min(700px, 92vw);
+
+    margin: 0 auto;
+
+    display: grid;
+
+    grid-template-columns:
+      1fr 1fr;
+
+    gap: 30px 35px;
+
+    align-self: auto;
+  }
+
+}
+
+
+@media (max-width: 520px) {
+
+  .etch-workspace {
+    width: 94vw;
+
+    padding-top: 25px;
+  }
+
+
+  .drawing-area {
+    width: 94vw;
+
+    padding: 10px;
+  }
+
+
+  .tool-panel {
+    width: 94vw;
+
+    grid-template-columns: 1fr;
+
+    gap: 28px;
+  }
+
+}
+
+.etch-page {
+  width: 100%;
+  min-height: 100vh;
+
+  padding: 30px 0 60px;
+}
+
+
+.etch-back-button {
+  margin-left: 4vw;
+
+  border: none;
+  background: transparent;
+
+  color: #111;
+
+  font-family:
+    Arial,
+    Helvetica,
+    sans-serif;
+
+  font-size: 10px;
+
+  letter-spacing: 1.5px;
+
+  cursor: pointer;
+
+  padding: 8px 0;
+
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease;
+}
+
+
+.etch-back-button:hover {
+  opacity: 0.6;
+
+  transform: translateX(-3px);
+}
+
+
+@media (max-width: 850px) {
+
+  .etch-back-button {
+    margin-left: 4vw;
+    margin-bottom: 10px;
+  }
+
+}

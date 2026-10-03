@@ -4306,3 +4306,20 @@ button.sketchbook-page-action {
   }
 
 }
+
+.container {
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.square {
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.drawing-area {
+  touch-action: none;
+  overscroll-behavior: contain;
+}
