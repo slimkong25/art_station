@@ -8,6 +8,7 @@ import {
   RotateCw,
   Trash2,
   Download,
+  Palette,
 } from "lucide-react";
 import { jsPDF } from "jspdf";
 import "./ClassicSketch.css";
@@ -17,51 +18,86 @@ const TOOLS = {
   pen: {
     label: "PEN",
     icon: PenLine,
-    size: 3,
+    defaultSize: 3,
+    minSize: 1,
+    maxSize: 20,
     opacity: 1,
   },
 
   pencil: {
     label: "PENCIL",
     icon: Pencil,
-    size: 2,
-    opacity: 0.55,
+    defaultSize: 2,
+    minSize: 1,
+    maxSize: 12,
+    opacity: 0.48,
   },
 
   brush: {
     label: "BRUSH",
     icon: Paintbrush,
-    size: 18,
-    opacity: 0.28,
+    defaultSize: 18,
+    minSize: 3,
+    maxSize: 70,
+    opacity: 0.22,
   },
 
   pastel: {
     label: "OIL PASTEL",
-    icon: Paintbrush,
-    size: 16,
-    opacity: 0.55,
+    icon: Palette,
+    defaultSize: 22,
+    minSize: 5,
+    maxSize: 80,
+    opacity: 0.38,
   },
 
   eraser: {
     label: "ERASER",
     icon: Eraser,
-    size: 30,
+    defaultSize: 30,
+    minSize: 5,
+    maxSize: 100,
     opacity: 1,
   },
 };
 
 
+const DEFAULT_SIZES = Object.fromEntries(
+  Object.entries(TOOLS).map(
+    ([key, value]) => [
+      key,
+      value.defaultSize,
+    ]
+  )
+);
+
+
+function midpoint(a, b) {
+
+  return {
+    x: (a.x + b.x) / 2,
+    y: (a.y + b.y) / 2,
+  };
+
+}
+
+
 function ClassicSketch() {
 
-  const canvasRef = useRef(null);
+  const canvasRef =
+    useRef(null);
 
-  const drawingRef = useRef(false);
+  const drawingRef =
+    useRef(false);
 
-  const currentStrokeRef = useRef(null);
+  const currentStrokeRef =
+    useRef(null);
 
-  const historyRef = useRef([]);
+  const historyRef =
+    useRef([]);
 
-  const historyIndexRef = useRef(-1);
+  const historyIndexRef =
+    useRef(-1);
 
 
   const [tool, setTool] =
@@ -76,16 +112,20 @@ function ClassicSketch() {
   const [historyIndex, setHistoryIndex] =
     useState(-1);
 
+  const [toolSizes, setToolSizes] =
+    useState(DEFAULT_SIZES);
+
+
+  const CANVAS_SIZE =
+    1200;
+
+
+  const thickness =
+    toolSizes[tool];
+
 
   /* =========================
-     CANVAS SIZE
-  ========================== */
-
-  const CANVAS_SIZE = 1200;
-
-
-  /* =========================
-     GET CONTEXT
+     CONTEXT
   ========================== */
 
   function getContext() {
@@ -98,7 +138,7 @@ function ClassicSketch() {
 
 
   /* =========================
-     GET POINTER POSITION
+     POINT
   ========================== */
 
   function getPoint(event) {
@@ -124,18 +164,20 @@ function ClassicSketch() {
 
 
   /* =========================
-     DRAW ONE SEGMENT
+     TOOL SETTINGS
   ========================== */
 
-  function drawSegment(
+  function applyToolStyle(
     ctx,
-    from,
-    to,
-    stroke
+    stroke,
+    sizeOverride = null
   ) {
 
     const settings =
       TOOLS[stroke.tool];
+
+    const size =
+      sizeOverride ?? stroke.size;
 
 
     ctx.save();
@@ -164,10 +206,11 @@ function ClassicSketch() {
     ctx.strokeStyle =
       stroke.color;
 
+    ctx.fillStyle =
+      stroke.color;
 
     ctx.lineWidth =
-      settings.size;
-
+      size;
 
     ctx.lineCap =
       "round";
@@ -177,94 +220,22 @@ function ClassicSketch() {
 
 
     /*
-     * Oil pastel gets a slightly
-     * rougher/tactile treatment.
+     * Brush gets soft edges and
+     * overlapping ink.
      */
 
     if (
-      stroke.tool === "pastel"
+      stroke.tool === "brush"
     ) {
 
+      ctx.shadowColor =
+        stroke.color;
+
+      ctx.shadowBlur =
+        size * 0.45;
+
       ctx.globalAlpha =
-        0.35;
-
-
-      ctx.lineWidth =
-        settings.size;
-
-
-      ctx.beginPath();
-
-      ctx.moveTo(
-        from.x,
-        from.y
-      );
-
-      ctx.lineTo(
-        to.x,
-        to.y
-      );
-
-      ctx.stroke();
-
-
-      /*
-       * Small deterministic marks
-       * create texture without using
-       * random values, so redraws stay
-       * identical.
-       */
-
-      for (
-        let i = 0;
-        i < 3;
-        i++
-      ) {
-
-        const offsetX =
-          Math.sin(
-            from.x * 0.03 +
-            i * 8
-          ) * 4;
-
-        const offsetY =
-          Math.cos(
-            from.y * 0.03 +
-            i * 11
-          ) * 4;
-
-
-        ctx.beginPath();
-
-        ctx.moveTo(
-          from.x + offsetX,
-          from.y + offsetY
-        );
-
-        ctx.lineTo(
-          to.x + offsetX,
-          to.y + offsetY
-        );
-
-        ctx.stroke();
-
-      }
-
-    } else {
-
-      ctx.beginPath();
-
-      ctx.moveTo(
-        from.x,
-        from.y
-      );
-
-      ctx.lineTo(
-        to.x,
-        to.y
-      );
-
-      ctx.stroke();
+        0.16;
 
     }
 
@@ -275,7 +246,272 @@ function ClassicSketch() {
 
 
   /* =========================
-     DRAW COMPLETE STROKE
+     DRAW DOT
+  ========================== */
+
+  function drawDot(
+    ctx,
+    point,
+    stroke
+  ) {
+
+    const settings =
+      TOOLS[stroke.tool];
+
+    const size =
+      stroke.size;
+
+
+    ctx.save();
+
+
+    if (
+      stroke.tool === "eraser"
+    ) {
+
+      ctx.globalCompositeOperation =
+        "destination-out";
+
+      ctx.globalAlpha = 1;
+
+    } else {
+
+      ctx.globalCompositeOperation =
+        "source-over";
+
+      ctx.globalAlpha =
+        settings.opacity;
+
+    }
+
+
+    ctx.fillStyle =
+      stroke.color;
+
+
+    if (
+      stroke.tool === "brush"
+    ) {
+
+      ctx.shadowColor =
+        stroke.color;
+
+      ctx.shadowBlur =
+        size * 0.5;
+
+      ctx.globalAlpha =
+        0.16;
+
+    }
+
+
+    ctx.beginPath();
+
+    ctx.arc(
+      point.x,
+      point.y,
+      size / 2,
+      0,
+      Math.PI * 2
+    );
+
+    ctx.fill();
+
+
+    ctx.restore();
+
+  }
+
+
+  /* =========================
+     DRAW SMOOTH PATH
+  ========================== */
+
+  function drawSmoothPath(
+    ctx,
+    points,
+    stroke,
+    offsetX = 0,
+    offsetY = 0,
+    opacityOverride = null,
+    sizeOverride = null
+  ) {
+
+    if (
+      !points ||
+      points.length === 0
+    ) {
+      return;
+    }
+
+
+    const settings =
+      TOOLS[stroke.tool];
+
+
+    const size =
+      sizeOverride ?? stroke.size;
+
+
+    ctx.save();
+
+
+    if (
+      stroke.tool === "eraser"
+    ) {
+
+      ctx.globalCompositeOperation =
+        "destination-out";
+
+      ctx.globalAlpha =
+        1;
+
+    } else {
+
+      ctx.globalCompositeOperation =
+        "source-over";
+
+      ctx.globalAlpha =
+        opacityOverride ??
+        settings.opacity;
+
+    }
+
+
+    ctx.strokeStyle =
+      stroke.color;
+
+    ctx.lineWidth =
+      size;
+
+    ctx.lineCap =
+      "round";
+
+    ctx.lineJoin =
+      "round";
+
+
+    /*
+     * Soft brush edge.
+     */
+
+    if (
+      stroke.tool === "brush"
+    ) {
+
+      ctx.shadowColor =
+        stroke.color;
+
+      ctx.shadowBlur =
+        size * 0.45;
+
+    }
+
+
+    ctx.beginPath();
+
+
+    if (
+      points.length === 1
+    ) {
+
+      ctx.arc(
+        points[0].x + offsetX,
+        points[0].y + offsetY,
+        size / 2,
+        0,
+        Math.PI * 2
+      );
+
+
+      ctx.fillStyle =
+        stroke.color;
+
+      ctx.fill();
+
+      ctx.restore();
+
+      return;
+
+    }
+
+
+    ctx.moveTo(
+      points[0].x + offsetX,
+      points[0].y + offsetY
+    );
+
+
+    if (
+      points.length === 2
+    ) {
+
+      ctx.lineTo(
+        points[1].x + offsetX,
+        points[1].y + offsetY
+      );
+
+    } else {
+
+      for (
+        let i = 1;
+        i < points.length - 1;
+        i++
+      ) {
+
+        const current =
+          points[i];
+
+        const next =
+          points[i + 1];
+
+        const mid =
+          midpoint(
+            current,
+            next
+          );
+
+
+        ctx.quadraticCurveTo(
+          current.x + offsetX,
+          current.y + offsetY,
+          mid.x + offsetX,
+          mid.y + offsetY
+        );
+
+      }
+
+
+      const secondLast =
+        points[
+          points.length - 2
+        ];
+
+      const last =
+        points[
+          points.length - 1
+        ];
+
+
+      ctx.quadraticCurveTo(
+        secondLast.x + offsetX,
+        secondLast.y + offsetY,
+        last.x + offsetX,
+        last.y + offsetY
+      );
+
+    }
+
+
+    ctx.stroke();
+
+    ctx.restore();
+
+  }
+
+
+  /* =========================
+     DRAW STROKE
   ========================== */
 
   function drawStroke(
@@ -293,75 +529,62 @@ function ClassicSketch() {
 
 
     /*
-     * Dot for a single click.
+     * NORMAL TOOLS
      */
 
-    if (points.length === 1) {
-
-      const settings =
-        TOOLS[stroke.tool];
-
-
-      ctx.save();
-
-
-      if (
-        stroke.tool === "eraser"
-      ) {
-
-        ctx.globalCompositeOperation =
-          "destination-out";
-
-        ctx.globalAlpha = 1;
-
-      } else {
-
-        ctx.globalCompositeOperation =
-          "source-over";
-
-        ctx.globalAlpha =
-          settings.opacity;
-
-      }
-
-
-      ctx.fillStyle =
-        stroke.color;
-
-
-      ctx.beginPath();
-
-      ctx.arc(
-        points[0].x,
-        points[0].y,
-        settings.size / 2,
-        0,
-        Math.PI * 2
-      );
-
-      ctx.fill();
-
-      ctx.restore();
-
-
-      return;
-    }
-
-
-    for (
-      let i = 1;
-      i < points.length;
-      i++
+    if (
+      stroke.tool !== "pastel"
     ) {
 
-      drawSegment(
+      drawSmoothPath(
         ctx,
-        points[i - 1],
-        points[i],
+        points,
         stroke
       );
 
+      return;
+
     }
+
+
+    /*
+     * OIL PASTEL
+     *
+     * Several soft layers give
+     * it more body and flow.
+     */
+
+    drawSmoothPath(
+      ctx,
+      points,
+      stroke,
+      0,
+      0,
+      0.24,
+      stroke.size * 1.1
+    );
+
+
+    drawSmoothPath(
+      ctx,
+      points,
+      stroke,
+      -0.7,
+      0.6,
+      0.10,
+      stroke.size * 0.9
+    );
+
+
+    drawSmoothPath(
+      ctx,
+      points,
+      stroke,
+      0.8,
+      -0.5,
+      0.08,
+      stroke.size * 0.85
+    );
 
   }
 
@@ -388,59 +611,42 @@ function ClassicSketch() {
     );
 
 
-    const visibleStrokes = [];
+    const visibleActions =
+      historyRef.current.slice(
+        0,
+        historyIndexRef.current + 1
+      );
 
 
-    const history =
-      historyRef.current;
+    visibleActions.forEach(
+      action => {
+
+        if (
+          action.type === "clear"
+        ) {
+
+          ctx.clearRect(
+            0,
+            0,
+            CANVAS_SIZE,
+            CANVAS_SIZE
+          );
+
+          return;
+
+        }
 
 
-    const index =
-      historyIndexRef.current;
+        if (
+          action.type === "stroke"
+        ) {
 
+          drawStroke(
+            ctx,
+            action.stroke
+          );
 
-    for (
-      let i = 0;
-      i <= index;
-      i++
-    ) {
-
-      const action =
-        history[i];
-
-
-      if (
-        action.type === "clear"
-      ) {
-
-        ctx.clearRect(
-          0,
-          0,
-          CANVAS_SIZE,
-          CANVAS_SIZE
-        );
-
-
-        visibleStrokes.length = 0;
-
-      } else {
-
-        visibleStrokes.push(
-          action.stroke
-        );
-
-      }
-
-    }
-
-
-    visibleStrokes.forEach(
-      stroke => {
-
-        drawStroke(
-          ctx,
-          stroke
-        );
+        }
 
       }
     );
@@ -449,7 +655,7 @@ function ClassicSketch() {
 
 
   /* =========================
-     INITIAL CANVAS
+     REDRAW ON HISTORY CHANGE
   ========================== */
 
   useEffect(() => {
@@ -472,7 +678,8 @@ function ClassicSketch() {
       getPoint(event);
 
 
-    drawingRef.current = true;
+    drawingRef.current =
+      true;
 
 
     currentStrokeRef.current = {
@@ -480,6 +687,8 @@ function ClassicSketch() {
       tool,
 
       color,
+
+      size: thickness,
 
       points: [
         point
@@ -492,19 +701,15 @@ function ClassicSketch() {
       getContext();
 
 
-    if (!ctx) {
-      return;
+    if (ctx) {
+
+      drawDot(
+        ctx,
+        point,
+        currentStrokeRef.current
+      );
+
     }
-
-
-    /*
-     * Draw a point immediately.
-     */
-
-    drawStroke(
-      ctx,
-      currentStrokeRef.current
-    );
 
 
     try {
@@ -536,10 +741,6 @@ function ClassicSketch() {
     event.preventDefault();
 
 
-    const point =
-      getPoint(event);
-
-
     const stroke =
       currentStrokeRef.current;
 
@@ -549,31 +750,118 @@ function ClassicSketch() {
     }
 
 
-    const previous =
-      stroke.points[
-        stroke.points.length - 1
-      ];
+    /*
+     * Pointer Events can provide
+     * extra coalesced points on
+     * supported devices.
+     */
+
+    const events =
+      event.getCoalescedEvents
+        ? event.getCoalescedEvents()
+        : [event];
 
 
-    stroke.points.push(
-      point
-    );
+    events.forEach(
+      pointerEvent => {
+
+        const point =
+          getPoint(
+            pointerEvent
+          );
 
 
-    const ctx =
-      getContext();
+        const points =
+          stroke.points;
 
 
-    if (!ctx) {
-      return;
-    }
+        const previous =
+          points[
+            points.length - 1
+          ];
 
 
-    drawSegment(
-      ctx,
-      previous,
-      point,
-      stroke
+        points.push(
+          point
+        );
+
+
+        const ctx =
+          getContext();
+
+
+        if (!ctx) {
+          return;
+        }
+
+
+        /*
+         * First segment.
+         */
+
+        if (
+          points.length === 2
+        ) {
+
+          drawSmoothPath(
+            ctx,
+            [
+              previous,
+              point
+            ],
+            stroke
+          );
+
+          return;
+
+        }
+
+
+        /*
+         * Smooth quadratic segment.
+         */
+
+        const beforePrevious =
+          points[
+            points.length - 3
+          ];
+
+        const currentPrevious =
+          points[
+            points.length - 2
+          ];
+
+        const current =
+          points[
+            points.length - 1
+          ];
+
+
+        const start =
+          midpoint(
+            beforePrevious,
+            currentPrevious
+          );
+
+
+        const end =
+          midpoint(
+            currentPrevious,
+            current
+          );
+
+
+        drawSmoothPath(
+          ctx,
+          [
+            start,
+            currentPrevious,
+            end
+          ],
+          stroke
+        );
+
+      }
     );
 
   }
@@ -607,12 +895,16 @@ function ClassicSketch() {
 
       history.push({
         type: "stroke",
+
         stroke: {
           ...stroke,
+
           points: [
             ...stroke.points
           ],
+
         },
+
       });
 
 
@@ -633,6 +925,7 @@ function ClassicSketch() {
 
     drawingRef.current =
       false;
+
 
     currentStrokeRef.current =
       null;
@@ -661,7 +954,7 @@ function ClassicSketch() {
 
 
   /* =========================
-     TOOL
+     CHOOSE TOOL
   ========================== */
 
   function chooseTool(
@@ -670,6 +963,32 @@ function ClassicSketch() {
 
     setTool(
       selectedTool
+    );
+
+  }
+
+
+  /* =========================
+     THICKNESS
+  ========================== */
+
+  function changeThickness(
+    event
+  ) {
+
+    const size =
+      Number(
+        event.target.value
+      );
+
+
+    setToolSizes(
+      current => ({
+        ...current,
+
+        [tool]: size,
+
+      })
     );
 
   }
@@ -687,7 +1006,9 @@ function ClassicSketch() {
     );
 
 
-    if (tool === "eraser") {
+    if (
+      tool === "eraser"
+    ) {
 
       setTool(
         "pencil"
@@ -779,7 +1100,7 @@ function ClassicSketch() {
 
 
   /* =========================
-     EXPORT CANVAS
+     EXPORT
   ========================== */
 
   function createExportCanvas() {
@@ -802,7 +1123,7 @@ function ClassicSketch() {
 
 
     /*
-     * Paper background.
+     * Paper.
      */
 
     ctx.fillStyle =
@@ -818,8 +1139,7 @@ function ClassicSketch() {
 
 
     /*
-     * Draw transparent artwork
-     * over the paper.
+     * Existing drawing.
      */
 
     ctx.drawImage(
@@ -893,8 +1213,8 @@ function ClassicSketch() {
         "png"
       );
 
-
       return;
+
     }
 
 
@@ -910,8 +1230,8 @@ function ClassicSketch() {
         "jpg"
       );
 
-
       return;
+
     }
 
 
@@ -927,8 +1247,8 @@ function ClassicSketch() {
         "webp"
       );
 
-
       return;
+
     }
 
 
@@ -978,13 +1298,11 @@ function ClassicSketch() {
 
 
       const x =
-        (pageWidth - size) /
-        2;
+        (pageWidth - size) / 2;
 
 
       const y =
-        (pageHeight - size) /
-        2;
+        (pageHeight - size) / 2;
 
 
       pdf.addImage(
@@ -1006,7 +1324,7 @@ function ClassicSketch() {
   }
 
 
-  const ToolIcon =
+  const CurrentToolIcon =
     TOOLS[tool].icon;
 
 
@@ -1025,6 +1343,7 @@ function ClassicSketch() {
           ref={canvasRef}
 
           width={CANVAS_SIZE}
+
           height={CANVAS_SIZE}
 
           className="classic-canvas"
@@ -1065,17 +1384,13 @@ function ClassicSketch() {
           </span>
 
 
-          {[
-            "pen",
-            "pencil",
-            "brush",
-            "pastel",
-            "eraser",
-          ].map(
+          {Object.keys(TOOLS).map(
             toolName => {
 
               const Icon =
-                TOOLS[toolName].icon;
+                TOOLS[
+                  toolName
+                ].icon;
 
 
               return (
@@ -1121,7 +1436,53 @@ function ClassicSketch() {
         </div>
 
 
-        {/* COLOR */}
+        {/* =========================
+            THICKNESS
+        ========================== */}
+
+        <div className="classic-tool-section">
+
+          <div className="classic-control-heading">
+
+            <span className="classic-label">
+              THICKNESS
+            </span>
+
+            <span className="classic-size-value">
+              {thickness}px
+            </span>
+
+          </div>
+
+
+          <input
+            type="range"
+
+            min={
+              TOOLS[tool].minSize
+            }
+
+            max={
+              TOOLS[tool].maxSize
+            }
+
+            value={
+              thickness
+            }
+
+            onChange={
+              changeThickness
+            }
+
+            className="classic-thickness"
+          />
+
+        </div>
+
+
+        {/* =========================
+            COLOR
+        ========================== */}
 
         <div className="classic-tool-section">
 
@@ -1154,7 +1515,9 @@ function ClassicSketch() {
         </div>
 
 
-        {/* HISTORY */}
+        {/* =========================
+            HISTORY
+        ========================== */}
 
         <div className="classic-tool-section">
 
@@ -1167,32 +1530,44 @@ function ClassicSketch() {
 
             <button
               type="button"
+
               className="classic-small-button"
 
-              onClick={undo}
+              onClick={
+                undo
+              }
 
               disabled={
                 historyIndex < 0
               }
             >
+
               <RotateCcw size={15} />
+
               UNDO
+
             </button>
 
 
             <button
               type="button"
+
               className="classic-small-button"
 
-              onClick={redo}
+              onClick={
+                redo
+              }
 
               disabled={
                 historyIndex >=
                 historyRef.current.length - 1
               }
             >
+
               <RotateCw size={15} />
+
               REDO
+
             </button>
 
           </div>
@@ -1200,20 +1575,26 @@ function ClassicSketch() {
 
           <button
             type="button"
+
             className="classic-tool-button"
 
             onClick={
               clearCanvas
             }
           >
+
             <Trash2 size={16} />
+
             CLEAR
+
           </button>
 
         </div>
 
 
-        {/* EXPORT */}
+        {/* =========================
+            EXPORT
+        ========================== */}
 
         <div className="classic-tool-section">
 
@@ -1265,8 +1646,11 @@ function ClassicSketch() {
                 saveArtwork
               }
             >
+
               <Download size={16} />
+
               SAVE
+
             </button>
 
           </div>
@@ -1274,20 +1658,28 @@ function ClassicSketch() {
         </div>
 
 
-        {/* CURRENT TOOL */}
+        {/* =========================
+            CURRENT TOOL
+        ========================== */}
 
         <div className="classic-current-tool">
 
-          <ToolIcon size={14} />
+          <CurrentToolIcon
+            size={14}
+          />
 
-          {TOOLS[tool].label}
+          <span>
+            {TOOLS[tool].label}
+          </span>
 
         </div>
 
       </aside>
 
     </section>
+
   );
+
 }
 
 
